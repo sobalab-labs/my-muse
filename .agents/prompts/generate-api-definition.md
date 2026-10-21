@@ -1,0 +1,1 @@
+Read @specs/001-artist-event-management/ia.md and @specs/001-artist-event-management/data-model.md and create a required API definition in a modern standard OpenAPI format.

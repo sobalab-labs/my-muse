@@ -11,7 +11,7 @@ Represents an authenticated application user.
 - `name`: string
 - `oauthProvider`: `'google' | 'kakao'`
 - `oauthId`: string
-- `preferredLocale`: `'ja' | 'ko'`
+- `preferredLocale`: `'ko' | 'ja'`
 - `onboardingCompleted`: boolean
 - `createdAt`: ISO 8601 timestamp
 - `updatedAt`: ISO 8601 timestamp
@@ -33,7 +33,7 @@ Represents a musical performance or concert event.
 - `title`: string
 - `date`: ISO 8601 datetime
 - `place`: string (Venue name & location)
-- `duration`: string (e.g., `"120 min"`)
+- `durationMinutes`: number
 - `ticketingUrl`: string
 - `officialAnnouncementUrl`: string
 - `region`: `'japan' | 'korea' | 'other'`
