@@ -1,0 +1,119 @@
+description = "Phase B of planning, SEED design system: detailed UI spec. Targets are shared (shared UI foundation) or a Route ID (one screen). Order is needs, then component choices from SEED (shadcn/ui as fallback), then composition. Never edits route structure."
+
+prompt = """
+
+## User Input
+
+```text
+{{args}}
+```
+
+You **MUST** consider the user input before proceeding (if not empty).
+
+## Pre-Execution Checks
+
+**Check for extension hooks (before UI spec)**:
+- Check if `.specify/extensions.yml` exists in the project root.
+- If it exists, read it and look for entries under the `hooks.before_ui_seed` key
+- If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- For each executable hook, output the following based on its `optional` flag:
+  - **Optional hook** (`optional: true`):
+    ```
+    ## Extension Hooks
+
+    **Optional Pre-Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
+
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+  - **Mandatory hook** (`optional: false`):
+    ```
+    ## Extension Hooks
+
+    **Automatic Pre-Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+
+    Wait for the result of the hook command before proceeding to the Outline.
+    ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
+- If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+
+## Outline
+
+1. **Load the procedure**: Your first action is to Read `.specify/ui/core.md`. Follow it from the top as this command's complete procedure, exactly as if it were written here. Do not proceed from memory or skip it. Wherever the core mentions the DESIGN SYSTEM BLOCK, it means the block below.
+
+2. **Execute the procedure**: Run the core procedure against the target given in User Input (shared, or a Route ID), using the DESIGN SYSTEM BLOCK for every component choice.
+
+## DESIGN SYSTEM BLOCK
+
+Design system: SEED Design (Daangn), with shadcn/ui as the fallback.
+
+Primary pool: MCP server `seed-docs`.
+- List tool: `list_react_components` (the entire primary pool; no parameters). Depending on the agent it may be exposed under a namespaced name such as `mcp__seed-docs__list_react_components`; if it is not loaded yet, load it first (e.g. via ToolSearch) before calling.
+- Detail tool: `get_react_component` with `componentName` (kebab-case name, e.g. `action-button`).
+- Do not use `get_rootage`, the getting-started, CLI, Stackflow, migration or other documentation tools; they are for implementation, not selection.
+
+Fallback pool: shadcn/ui, via skill `shadcn-ui` (its SKILL.md links to every component's documentation).
+- Use it only for a need that has no fit in the primary pool, never because a shadcn component seems nicer.
+- Find the candidate in the skill's component index; fetch the documentation page only for ambiguous candidates (1-3).
+- Source column value: `fallback:shadcn`.
+
+If a need fits neither pool, write `No fit in pool` and propose a plain layout container or a plain description of the missing behaviour. Do not invent components.
+
+## Mandatory Post-Execution Hooks
+
+**You MUST complete this section before reporting completion to the user.**
+
+Check if `.specify/extensions.yml` exists in the project root.
+- If it does not exist, or no hooks are registered under `hooks.after_ui_seed`, skip to the Completion Report.
+- If it exists, read it and look for entries under the `hooks.after_ui_seed` key.
+- If the YAML cannot be parsed or is invalid, skip hook checking silently and continue to the Completion Report.
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- For each executable hook, output the following based on its `optional` flag:
+  - **Mandatory hook** (`optional: false`) — **You MUST emit `EXECUTE_COMMAND:` for each mandatory hook**:
+    ```
+    ## Extension Hooks
+
+    **Automatic Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+    ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
+  - **Optional hook** (`optional: true`):
+    ```
+    ## Extension Hooks
+
+    **Optional Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
+
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+
+## Completion Report
+
+Report completion to the user with the target (shared or Route ID), the UI spec path(s) written as defined in `.specify/ui/core.md`, and any needs marked `No fit in pool` or `fallback:shadcn`.
+
+## Key rules
+
+- Use absolute paths for filesystem operations; use project-relative paths for references in documentation
+- Never edit route structure
+- Do not invent components
+
+## Done When
+
+- [ ] `.specify/ui/core.md` read and followed as the complete procedure
+- [ ] Component choices drawn from the DESIGN SYSTEM BLOCK pools only
+- [ ] Extension hooks dispatched or skipped according to the rules in Mandatory Post-Execution Hooks above
+- [ ] Completion reported to user with target, spec path(s), and fallback / no-fit items"""

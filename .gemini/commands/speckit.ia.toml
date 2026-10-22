@@ -1,0 +1,124 @@
+description = "Phase A of planning: derive the Next.js route map (information architecture) from spec.md and produce ia.md. Does not design screens."
+
+prompt = """
+
+## User Input
+
+```text
+{{args}}
+```
+
+You **MUST** consider the user input before proceeding (if not empty). Treat it as additional constraints on the IA. Do not let it expand scope into UI design.
+
+## Pre-Execution Checks
+
+**Check for extension hooks (before information architecture)**:
+- Check if `.specify/extensions.yml` exists in the project root.
+- If it exists, read it and look for entries under the `hooks.before_ia` key
+- If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- For each executable hook, output the following based on its `optional` flag:
+  - **Optional hook** (`optional: true`):
+    ```
+    ## Extension Hooks
+
+    **Optional Pre-Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
+
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+  - **Mandatory hook** (`optional: false`):
+    ```
+    ## Extension Hooks
+
+    **Automatic Pre-Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+
+    Wait for the result of the hook command before proceeding to the Outline.
+    ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
+- If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+
+## Role
+
+You are an information architect for a Next.js (App Router) application. Your only deliverable is `ia.md`: which routes exist, what each owns, and how they connect. Think in objects, tasks, and navigation, not in pixels or components.
+
+## Outline
+
+1. **Setup**: Run `.specify/scripts/bash/check-prerequisites.sh --json --paths-only` from repo root and parse its JSON for FEATURE_DIR and FEATURE_SPEC (paths-only mode, so it does not require or create plan.md). Output goes to `FEATURE_DIR/ia.md`. If the script fails or does not support that flag, use `specs/<current branch name>/` (or the single `specs/*` directory containing spec.md) and say which you used. If FEATURE_SPEC does not exist, stop and tell the user to run `/speckit.specify` first.
+
+2. **Load context**: Read ONLY FEATURE_SPEC, `.specify/memory/constitution.md` (if present), and `.specify/templates/ia-template.md`. Do not load plan.md or any ui/ files. Keeping this context narrow is deliberate.
+
+3. **Fill the template** in this order, completing each section before the next:
+   1. **Object inventory.** Objects = spec Key Entities. For each: attributes, relationships, user actions.
+   2. **Task list.** One row per user task, traced to US and FR IDs. Tasks come from stories, not from screens you imagine.
+   3. **Candidate routes.** Group by object + task cohesion: things done to the same object by the same task go together; split routes when the primary object or the task differs, or when auth/rendering needs differ. URLs are noun hierarchies; avoid verbs in paths. Put filter/sort/pagination state in `searchParams` so views are shareable and survive back/forward. Use route groups `(auth)`, `(app)` for layout and auth boundaries, and a `[locale]` segment when the spec requires i18n.
+   4. **Shared concerns.** Navigation model, locale handling, auth boundary, URL-state conventions, global failure states.
+   5. **Traceability.** Every FR and every user story maps to at least one route. Report orphans in both directions.
+   6. **Decision log.** For each non-obvious choice (e.g., events as one feed with filters vs. nested under each artist), list at least one rejected alternative and why. Max 8 decisions.
+   7. **Open questions.** Max 5, each with a recommended default. Do not block on them; apply the default and mark it.
+
+4. **Self-review pass (mandatory, separate step).** Re-read your draft against this checklist and fix before saving:
+   - [ ] Every FR-### and US# appears in the traceability matrix.
+   - [ ] No route lacks a single-sentence purpose, a primary object, and an auth level.
+   - [ ] No two routes serve the same task without a stated reason.
+   - [ ] Every route is reachable from the navigation model or another route.
+   - [ ] No layout, component, color, or copy decisions leaked in.
+   - [ ] Route IDs are stable and unique (R-01...).
+   - [ ] §7 lists `shared` plus one row per route, all `pending`.
+
+5. **Write and report**: Write `ia.md`. Report to the user: route count, any orphans, open questions with defaults, and the decisions with high reversal cost. End with: "Review ia.md and set Status to Approved, then run /speckit.ui shared <your design-system instruction>."
+
+## Mandatory Post-Execution Hooks
+
+**You MUST complete this section before reporting completion to the user.**
+
+Check if `.specify/extensions.yml` exists in the project root.
+- If it does not exist, or no hooks are registered under `hooks.after_ia`, skip to the Completion Report.
+- If it exists, read it and look for entries under the `hooks.after_ia` key.
+- If the YAML cannot be parsed or is invalid, skip hook checking silently and continue to the Completion Report.
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- For each executable hook, output the following based on its `optional` flag:
+  - **Mandatory hook** (`optional: false`) — **You MUST emit `EXECUTE_COMMAND:` for each mandatory hook**:
+    ```
+    ## Extension Hooks
+
+    **Automatic Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+    ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
+  - **Optional hook** (`optional: true`):
+    ```
+    ## Extension Hooks
+
+    **Optional Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
+
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+
+## Key rules
+
+- No wireframes, component names, or visual styling. Those belong to `/speckit.ui`.
+- No technology choices beyond App Router structure (no state libraries, UI kits, ORMs). Those belong to `/speckit.plan`.
+- Do not invent requirements. If the spec is silent, record it as an open question.
+- Do not run `/speckit.ui` or `/speckit.plan` yourself.
+- Use absolute paths for filesystem operations; use project-relative paths for references in documentation.
+
+## Done When
+
+- [ ] ia.md written from the template with all sections filled
+- [ ] Self-review checklist passed
+- [ ] Report given to the user with route count, orphans, open questions, and high-reversal-cost decisions"""
