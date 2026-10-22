@@ -9,8 +9,9 @@
 |--------|-----------------------------|---------------|------------------------------|
 | **User** | ID, OAuth identity, preferred language (JA/KO), profile info, onboarding completion state | has many FollowedArtists, has one NotificationSubscriptionConfig | Sign in (OAuth), complete onboarding (pick artists / skip), switch language, update notification preferences, sign out, delete account |
 | **Artist** | ID, name, genre, nation, list of website/SNS URLs | has many Events, belongs to many Users (as followed artist) | Search artists, view artist metadata, view artist detail, follow / unfollow artist (auth required) |
-| **Event (Concert)** | ID, associated artist(s), date, place, duration, ticketing URL, official announcement URL | belongs to one or more Artists | Search events, view event details, filter events (by artist/region), sort events (by d-day), view feed as list or month calendar, add to calendar (ICS), share, open ticketing page |
+| **Event (Concert)** | ID, associated artist(s), date, place, duration, ticketing URL, official announcement URL | belongs to one or more Artists | Search events, view event details, filter events (by artist/region), sort events (by d-day), view feed as list or month calendar, add to calendar (ICS), share, open ticketing page, bookmark/unbookmark event |
 | **NotificationSubscription** | ID, user ID, followed artist notification toggles (new event, ticket open day-before/30min/at-open bundle, discography with priority 1>2>3), general weekly event update toggle, delivery channels (email, Kakao message) | belongs to one User | Configure subscriptions, opt-in/opt-out of notification channels and types (auth required) |
+| **BookmarkedEvent** | ID, user ID, event ID | belongs to one User, belongs to one Event | View list of bookmarked events, unbookmark event |
 
 ## 2. User Tasks (from spec.md User Stories)
 
@@ -33,20 +34,23 @@
 | T-15 | Add event to calendar (ICS), share event, open ticketing page | US3, FR-013 | Daily | `/[locale]/(app)/events/[id]` |
 | T-16 | View future events feed as month calendar | US4, FR-013 | Weekly | `/[locale]/(app)/home` |
 | T-17 | Read terms of service and privacy policy | FR-015 | Rare | `/[locale]/(app)/legal/[doc]` |
+| T-18 | Bookmark or unbookmark an individual event (auth required) | US7, FR-016 | Daily | `/[locale]/(app)/home`, `/[locale]/(app)/search`, `/[locale]/(app)/events/[id]` |
+| T-19 | View and manage list of bookmarked events (auth required) | US7, FR-017 | Weekly | `/[locale]/(app)/events/bookmarked` |
 
 ## 3. Route Map
 
 | Route ID | Path (App Router) | Route group / layout | Purpose (one sentence) | Primary object | Tasks served | Auth | Data read / mutated | URL state (params / searchParams) | Rendering intent | Links in → out |
 |----------|-------------------|----------------------|------------------------|----------------|--------------|------|---------------------|-----------------------------------|------------------|----------------|
 | R-01 | `/[locale]/login` | `(auth)` | Authenticate users via third-party OAuth providers (Google, Kakao) and redirect to onboarding (first-time users) or Home upon successful session creation. | User | T-01 | public | Read: OAuth auth providers / Mutate: User session creation | `?next=` | static / dynamic SSR | In: Root, Home (sign-in prompt), Gated routes / Out: Onboarding, Home, Legal |
-| R-02 | `/[locale]/(app)/home` | `(app)` | Display the future events feed under explicit scopes (Following for authenticated users, Trending for everyone) with a followed artists strip, list/calendar views, filtering and sorting controls. | Event | T-05, T-08, T-09, T-16 | public | Read: Future events (following or trending), followed artists / Mutate: None | `?scope=` (following [authenticated only] / trending), `?view=` (list/calendar), `?month=`, `?artist=`, `?region=`, `?sort=` | dynamic SSR / client infinite scroll | In: Login, Onboarding, Nav / Out: Search, Event Detail, Artist Detail, My Artists, Login (Following scope for unauthenticated) |
-| R-03 | `/[locale]/(app)/search` | `(app)` | Provide integrated keyword search for matching artists and events simultaneously with filtering options and artist following actions (prompting sign-in for unauthenticated visitors). | Artist, Event | T-03, T-06 | public | Read: Artists, Events / Mutate: Follow/unfollow artist (auth required) | `?q=`, `?type=` (all/artist/event), `?region=`, `?artist=` | dynamic SSR / client search with infinite scroll | In: Nav, Home, My Artists / Out: Artist Detail, Event Detail, My Artists |
+| R-02 | `/[locale]/(app)/home` | `(app)` | Display the future events feed under explicit scopes (Following for authenticated users, Trending for everyone) with a followed artists strip, list/calendar views, filtering and sorting controls. | Event | T-05, T-08, T-09, T-16, T-18 | public | Read: Future events (following or trending), followed artists / Mutate: Bookmark/unbookmark event (auth required) | `?scope=` (following [authenticated only] / trending), `?view=` (list/calendar), `?month=`, `?artist=`, `?region=`, `?sort=` | dynamic SSR / client infinite scroll | In: Login, Onboarding, Nav / Out: Search, Event Detail, Artist Detail, My Artists, Login (Following scope for unauthenticated) |
+| R-03 | `/[locale]/(app)/search` | `(app)` | Provide integrated keyword search for matching artists and events simultaneously with filtering options and artist following/event bookmarking actions (prompting sign-in for unauthenticated visitors). | Artist, Event | T-03, T-06, T-18 | public | Read: Artists, Events / Mutate: Follow/unfollow artist (auth required), Bookmark/unbookmark event (auth required) | `?q=`, `?type=` (all/artist/event), `?region=`, `?artist=` | dynamic SSR / client search with infinite scroll | In: Nav, Home, My Artists, My Bookmarked Events / Out: Artist Detail, Event Detail, My Artists, My Bookmarked Events |
 | R-04 | `/[locale]/(app)/artists/[id]` | `(app)` | Display comprehensive artist profile metadata (genre, nation, website/SNS URLs), associated upcoming events, and follow/unfollow actions (prompting sign-in for unauthenticated visitors). | Artist | T-04, T-06 | public | Read: Artist details, associated events / Mutate: Follow/unfollow artist (auth required) | Route param: `id` | dynamic SSR | In: Search, Home, My Artists, Onboarding / Out: Event Detail |
-| R-05 | `/[locale]/(app)/events/[id]` | `(app)` | Display complete event detail including participating artist(s), date, place, duration, ticketing URL, and official announcement URL, with add-to-calendar (ICS), share, and open-ticketing actions. | Event | T-05, T-15 | public | Read: Event details / Mutate: None | Route param: `id` | dynamic SSR | In: Home, Search, Artist Detail / Out: Artist Detail, external ticketing and announcement URLs |
+| R-05 | `/[locale]/(app)/events/[id]` | `(app)` | Display complete event detail including participating artist(s), date, place, duration, ticketing URL, and official announcement URL, with add-to-calendar (ICS), share, open-ticketing, and bookmark/unbookmark actions (prompting sign-in for unauthenticated visitors). | Event | T-05, T-15, T-18 | public | Read: Event details / Mutate: Bookmark/unbookmark event (auth required) | Route param: `id` | dynamic SSR | In: Home, Search, Artist Detail, My Bookmarked Events / Out: Artist Detail, external ticketing and announcement URLs |
 | R-06 | `/[locale]/(app)/artists/followed` | `(app)` | "My Artists" hub: manage the authenticated user's personal list of favorite followed artists with quick unfollow actions and navigation to artist detail. | Artist | T-06, T-07 | public (sign-in prompt in-page) | Read: User followed artists list / Mutate: Unfollow artist | None | dynamic SSR / client infinite scroll | In: Nav, Home (followed artists strip) / Out: Artist Detail, Search |
 | R-07 | `/[locale]/(app)/settings` | `(app)` | Manage global application language preferences, notification subscriptions for followed artists (priorities 1>2>3) and general weekly updates, sign-out, and account deletion. | User, NotificationSubscription | T-02, T-10, T-11, T-13, T-14 | public (notification and account sections prompt sign-in in-page) | Read: User profile, notification config / Mutate: Language preference, notification subscriptions, user session (sign-out), user account and associated data (delete) | None | dynamic SSR | In: Nav / Out: Home, Legal |
 | R-08 | `/[locale]/(app)/onboarding` | `(app)` | Guide first-time authenticated users through picking artists to follow (skippable) before reaching Home. | Artist, User | T-12, T-06 | public (sign-in prompt in-page) | Read: Suggested/trending artists / Mutate: Follow artist, onboarding completion state | None | dynamic SSR / client search with infinite scroll | In: Login (first-time users) / Out: Home |
 | R-09 | `/[locale]/(app)/legal/[doc]` | `(app)` | Display terms of service and privacy policy documents. | — | T-17 | public | Read: Static legal content / Mutate: None | Route param: `doc` (terms/privacy) | static | In: Login, Settings, Nav footer / Out: Back to previous route |
+| R-10 | `/[locale]/(app)/events/bookmarked` | `(app)` | "My Bookmarked Events" hub: view and manage the authenticated user's list of bookmarked events with quick unbookmark actions and navigation to event detail. | BookmarkedEvent | T-18, T-19 | public (sign-in prompt in-page) | Read: User bookmarked events list / Mutate: Unbookmark event | None | dynamic SSR / client infinite scroll | In: Nav / Out: Event Detail, Search |
 
 ### 3.1 Layout & Segment Tree
 
@@ -68,8 +72,10 @@ app/
         │   └── followed/
         │       └── page.tsx  # R-06: My Artists (Public; sign-in prompt in-page)
         ├── events/
-        │   └── [id]/
-        │       └── page.tsx  # R-05: Event Detail View
+        │   ├── [id]/
+        │   │   └── page.tsx  # R-05: Event Detail View
+        │   └── bookmarked/
+        │       └── page.tsx  # R-10: My Bookmarked Events (Public; sign-in prompt in-page)
         ├── onboarding/
         │   └── page.tsx      # R-08: First-time artist picking (Public; sign-in prompt in-page)
         ├── legal/
@@ -81,17 +87,17 @@ app/
 
 ### 3.2 Shared Concerns (cross-route)
 
-- **Navigation model**: Persistent top or bottom navigation bar available on all `(app)` routes with four primary destinations: Home (`R-02`), Search (`R-03`), My Artists (`R-06`), and Settings (`R-07`), plus language switcher and user profile/sign-out (or sign-in CTA for unauthenticated visitors). Legal pages (`R-09`) are reachable from a footer or menu link in the shell, Login, and Settings.
+- **Navigation model**: Persistent top or bottom navigation bar available on all `(app)` routes with five primary destinations: Home (`R-02`), Search (`R-03`), My Artists (`R-06`), My Bookmarked Events (`R-10`), and Settings (`R-07`), plus language switcher and user profile/sign-out (or sign-in CTA for unauthenticated visitors). Legal pages (`R-09`) are reachable from a footer or menu link in the shell, Login, and Settings.
 - **Locale handling**: Enforced via `[locale]` segment (`ja`, `ko`). Language switcher in global layout updates locale segment / user preference cookie and reloads/redirects.
-- **Auth boundary**: `(auth)` group (`R-01`) is public and redirects authenticated users to Home. `R-02`, `R-03`, `R-04`, `R-05`, `R-09` are publicly accessible to both authenticated and unauthenticated visitors (with unauthenticated visitors viewing the Trending scope and prompted to sign in when attempting auth-critical actions like following artists or selecting the Following scope). All `(app)` routes are public and use one uniform pattern: auth-only content (My Artists `R-06`, Onboarding `R-08`, and the notification and account sections of Settings `R-07`) shows an in-page sign-in prompt (leading to `R-01` with `?next=`) to unauthenticated visitors instead of redirecting. Routes never redirect unauthenticated visitors to Login; Login (`R-01`) is reached only through these sign-in prompts or after an OAuth failure.
+- **Auth boundary**: `(auth)` group (`R-01`) is public and redirects authenticated users to Home. `R-02`, `R-03`, `R-04`, `R-05`, `R-09` are publicly accessible to both authenticated and unauthenticated visitors (with unauthenticated visitors viewing the Trending scope and prompted to sign in when attempting auth-critical actions like following artists, bookmarking events, or selecting the Following scope). All `(app)` routes are public and use one uniform pattern: auth-only content (My Artists `R-06`, My Bookmarked Events `R-10`, Onboarding `R-08`, and the notification and account sections of Settings `R-07`) shows an in-page sign-in prompt (leading to `R-01` with `?next=`) to unauthenticated visitors instead of redirecting. Routes never redirect unauthenticated visitors to Login; Login (`R-01`) is reached only through these sign-in prompts or after an OAuth failure.
 - **Post-login routing**: After successful sign-in, first-time users (onboarding not completed) go to Onboarding (`R-08`); returning users go to the `?next=` target or Home (`R-02`). Skipping or completing Onboarding marks it complete and leads to Home.
 - **Feed scope defaults**: Home (`R-02`) defaults to `?scope=following` for authenticated users and `?scope=trending` for unauthenticated visitors. There is no global "all events" scope. `?scope=following` is never valid for unauthenticated visitors: a direct hit, shared link, or invalid/missing value is canonicalized (server-side, other params preserved) to `?scope=trending`, and selecting the Following scope in the UI opens the sign-in prompt (with `?next=` set to the Following URL) without changing the URL.
 - **Filter/sort/scope state convention**: All scope, view, filter, sort, search query, and type parameters (`?scope=`, `?view=`, `?month=`, `?q=`, `?type=`, `?artist=`, `?region=`, `?sort=`) are stored in URL `searchParams` to ensure shareability, deep linking, and browser back/forward support. Entity IDs use dynamic route segments (`[id]`).
-- **Long lists**: Home feed, Search results, My Artists, and Onboarding suggestions use cursor-based infinite scroll; the cursor is not part of the URL. Scroll position and loaded items are restored when returning from a detail route (back navigation).
+- **Long lists**: Home feed, Search results, My Artists, My Bookmarked Events, and Onboarding suggestions use cursor-based infinite scroll; the cursor is not part of the URL. Scroll position and loaded items are restored when returning from a detail route (back navigation).
 - **Global states needing a route-level answer**:
   - *Empty account (zero favorite artists for auth users, e.g. onboarding skipped)*: Home (`R-02`, Following scope) displays empty state prompting the user to discover and add favorite artists via Search (`R-03`).
   - *Expired session*: Treated as signed out on every route. The user sees a localized "session expired" notice, Home (`R-02`) resolves to the Trending scope, and auth-only content shows the in-page sign-in prompt (with `?next=` preserved). No automatic redirect to Login.
-  - *Backend API failure*: Displays localized error banners and rolls back optimistic UI state (e.g. follow/unfollow toggle or notification toggle).
+  - *Backend API failure*: Displays localized error banners and rolls back optimistic UI state (e.g. follow/unfollow toggle, bookmark/unbookmark toggle, or notification toggle).
   - *Not found*: Nonexistent `[id]` or `[doc]` values and unknown paths resolve to the localized `not-found.tsx` with navigation back to Home (`R-02`).
   - *Signed out*: Sign-out ends the session and returns the user to Home (`R-02`, Trending scope). Account deletion (confirmed in `R-07`) removes the user's data and ends the session the same way.
 
@@ -110,10 +116,12 @@ app/
 | FR-009 | R-07 | General weekly event update notification subscriptions |
 | FR-010 | R-02, R-06 | Home with Following/Trending scopes and followed artists strip; My Artists as primary destination |
 | FR-011 | R-08, R-01 | Optional first-time onboarding after sign-in |
-| FR-012 | R-02, R-03, R-06, R-08 | Cursor-based infinite scroll with scroll position restoration on feed, search results, and artist lists |
+| FR-012 | R-02, R-03, R-06, R-08, R-10 | Cursor-based infinite scroll with scroll position restoration on feed, search results, and artist/event lists |
 | FR-013 | R-05, R-02 | Add to calendar (ICS), share, open ticketing page on event detail; month calendar view of the feed |
 | FR-014 | R-07 | Sign-out and permanent account deletion |
 | FR-015 | R-09, `not-found.tsx` | Terms/privacy pages and localized not-found page |
+| FR-016 | R-02, R-03, R-05 | Bookmark/unbookmark events |
+| FR-017 | R-10 | View list of bookmarked events |
 
 **Orphan check**: Requirements with no route: none. Routes with no requirement: none.
 
@@ -135,6 +143,7 @@ app/
 | D-12 | Sign-out and account deletion live in Settings (`R-07`) as actions, not separate routes; Legal (`R-09`) is a single dynamic route | Separate sign-out/delete routes; one route per legal document | Keeps account lifecycle in the existing preferences hub and avoids route sprawl. | low |
 | D-13 | Uniform in-page auth prompting: all `(app)` routes are public; auth-only content (`R-06`, `R-08`, notification/account sections of `R-07`) shows a sign-in prompt instead of redirecting | Auth-only routes that redirect to Login | Consistent with the public-first, gate-on-action model (D-2); one pattern everywhere, tabs never bounce signed-out users, and signed-out users can still change language and see what each area offers. | low |
 | D-14 | Home scope is resolved on the server from session + `?scope=`; unauthenticated `?scope=following` is canonicalized to trending, and the backend feed endpoint also rejects Following without a session | Client-only guard; blocking the URL with a redirect to Login | Keeps one source of truth, no content flash, shareable links degrade gracefully, and UI guards alone are never the security boundary. | low |
+| D-15 | Dedicated "My Bookmarked Events" Route (`R-10`) at `/[locale]/events/bookmarked` | Adding an extra scope to Home (`R-02`) | Dedicated hub for bookmarked events matches the My Artists hub (`R-06`) model, providing a clean primary destination for tracking personal concert interests. | low |
 
 ## 6. Open Questions (max 5, each with a recommended default)
 
@@ -156,3 +165,4 @@ app/
 | R-07 | `ui/R-07-settings.md` | drafted |
 | R-08 | `ui/R-08-onboarding.md` | drafted |
 | R-09 | `ui/R-09-legal.md` | drafted |
+| R-10 | `ui/R-10-my-bookmarked-events.md` | drafted |

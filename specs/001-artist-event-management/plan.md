@@ -26,7 +26,7 @@ Build a localized web application (supporting Japanese and Korean) for managing 
 
 **Constraints**: Strict adherence to SEED Design system components (`@seed-design/react`), localization for Japanese (`ja`) and Korean (`ko`) with dedicated format rules, public-first access model with uniform in-page auth prompting for auth-critical actions, and zero backend mutations for artist master data.
 
-**Scale/Scope**: 9 route segments (`/[locale]/login`, `/[locale]/(app)/home`, `/[locale]/(app)/search`, `/[locale]/(app)/artists/[id]`, `/[locale]/(app)/events/[id]`, `/[locale]/(app)/artists/followed`, `/[locale]/(app)/settings`, `/[locale]/(app)/onboarding`, `/[locale]/(app)/legal/[doc]`) with i18n routing, cursor-based infinite scroll, scroll position restoration, and event calendar view.
+**Scale/Scope**: 10 route segments (`/[locale]/login`, `/[locale]/(app)/home`, `/[locale]/(app)/search`, `/[locale]/(app)/artists/[id]`, `/[locale]/(app)/events/[id]`, `/[locale]/(app)/events/bookmarked`, `/[locale]/(app)/artists/followed`, `/[locale]/(app)/settings`, `/[locale]/(app)/onboarding`, `/[locale]/(app)/legal/[doc]`) with i18n routing, cursor-based infinite scroll, scroll position restoration, and event calendar view.
 
 ## Constitution Check
 
@@ -73,7 +73,9 @@ app/
 │       │   └── followed/
 │       │       └── page.tsx
 │       ├── events/
-│       │   └── [id]/
+│       │   ├── [id]/
+│       │   │   └── page.tsx
+│       │   └── bookmarked/
 │       │       └── page.tsx
 │       ├── onboarding/
 │       │   └── page.tsx
@@ -82,6 +84,7 @@ app/
 │       │       └── page.tsx
 │       └── settings/
 │           └── page.tsx
+```
 components/
 ├── shared/              # SEED Design wrapper components (Navigation, Header, SnackbarProvider, etc.)
 └── ...

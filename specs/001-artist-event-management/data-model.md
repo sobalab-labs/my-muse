@@ -53,15 +53,24 @@ Represents user configuration for artist-specific and general weekly notificatio
 - `generalWeeklyUpdates`: boolean
 - `updatedAt`: ISO 8601 timestamp
 
+### BookmarkedEvent
+Represents an event that a user has bookmarked.
+- `id`: string (UUID)
+- `userId`: string (FK -> User.id)
+- `eventId`: string (FK -> Event.id)
+- `createdAt`: ISO 8601 timestamp
+
 ## 2. Relationships
 
 - **User** 1:N **FollowedArtist** (Many-to-many relationship between User and Artist)
+- **User** 1:N **BookmarkedEvent** (Many-to-many relationship between User and Event)
 - **User** 1:1 **NotificationSubscription**
 - **Artist** 1:N **Event** (An artist can be associated with many events; an event can feature multiple artists)
 
 ## 3. State Transitions & Validation Rules
 
 - **Follow / Unfollow**: Authenticated users can add/remove artists from their followed list. Unauthenticated users trigger an OAuth sign-in prompt.
+- **Bookmark / Unbookmark**: Authenticated users can add/remove events from their bookmarked list. Unauthenticated users trigger an OAuth sign-in prompt.
 - **Onboarding State**: `onboardingCompleted` transitions from `false` to `true` upon completing or skipping the initial artist selection step.
 - **Notification Priority**: In backend processing and UI display, artist notification types follow priority: 1. New Event > 2. Ticket Open Bundle > 3. Discography.
-- **Account Deletion**: Permanent account deletion removes the User record, followed artists associations, and notification subscriptions.
+- **Account Deletion**: Permanent account deletion removes the User record, followed artists associations, bookmarked events, and notification subscriptions.

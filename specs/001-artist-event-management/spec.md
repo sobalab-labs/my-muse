@@ -116,6 +116,23 @@ Authenticated users can configure and request notification subscriptions for gen
 
 ---
 
+### User Story 7 - Event Bookmarking Management (Priority: P4)
+
+Authenticated users can bookmark (follow) individual events of interest to track them separately from the general event feed, and view their collected list of bookmarked events. Unauthenticated users are prompted to sign in when attempting to bookmark an event.
+
+**Why this priority**: Enabling users to explicitly bookmark events allows for personalized tracking of specific concerts beyond just following artists, enhancing utility and engagement.
+
+**Independent Test**: Can be fully tested by verifying authenticated users can bookmark/unbookmark events from feed/detail views, and view their list of bookmarked events, while unauthenticated users are prompted for sign-in.
+
+**Acceptance Scenarios**:
+
+1. **Given** an authenticated user viewing event search results or event details, **When** they choose to bookmark an event, **Then** the event is successfully added to their personal bookmarked events list.
+2. **Given** an unauthenticated visitor attempting to bookmark an event, **When** they trigger the action, **Then** the system prompts them to sign in via OAuth.
+3. **Given** an existing bookmarked event, **When** the authenticated user unbookmarks the event, **Then** the event is removed from their bookmarked events list.
+4. **Given** an authenticated user, **When** they open their "My Bookmarked Events" (or similar section), **Then** the system displays their list of bookmarked events with quick access to event detail and unbookmark.
+
+---
+
 ### Edge Cases
 
 - What happens when a user has zero favorite artists added (e.g., onboarding skipped)? The system displays an empty state prompting them to add artists to see upcoming events and receive notifications.
@@ -143,6 +160,8 @@ Authenticated users can configure and request notification subscriptions for gen
 - **FR-013**: System MUST provide event actions for add to calendar (ICS), share, and opening the ticketing URL, and MUST provide a month calendar view of the events feed.
 - **FR-014**: System MUST allow authenticated users to sign out and to permanently delete their account and associated data.
 - **FR-015**: System MUST provide a localized "not found" page for nonexistent resources and make terms of service and privacy policy pages accessible.
+- **FR-016**: System MUST allow authenticated users to bookmark or unbookmark individual events.
+- **FR-017**: System MUST allow authenticated users to view their list of bookmarked events.
 
 ### Key Entities
 
@@ -150,6 +169,7 @@ Authenticated users can configure and request notification subscriptions for gen
 - **Artist**: Represents a musician/artist with attributes: name, genre, nation, and a list of website/SNS URLs.
 - **Event (Concert)**: Represents a musical performance with attributes: associated artist(s), date, place, duration, ticketing URL, and official announcement URL.
 - **NotificationSubscription**: Represents user preferences for global notification subscriptions for followed artists (new events, ticket opens with fixed timings, discography updates with 1 > 2 > 3 priority) and general weekly event update subscriptions via email or Kakao message.
+- **BookmarkedEvent**: Represents an event that a user has bookmarked for personal tracking.
 
 ## Success Criteria *(mandatory)*
 
@@ -161,6 +181,7 @@ Authenticated users can configure and request notification subscriptions for gen
 - **SC-004**: Users can successfully search for events by event name or artist name in under 5 seconds.
 - **SC-005**: Event feed filters and sorting applied by users update the view instantly (under 200ms perceived latency).
 - **SC-006**: 100% of user requests to configure or update artist-specific and general weekly notification subscriptions successfully transmit to the backend and reflect confirmation status in the UI.
+- **SC-007**: Users can bookmark or unbookmark an event in under 3 seconds.
 
 ## Assumptions
 

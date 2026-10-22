@@ -1,6 +1,6 @@
 # Tasks: Artist & Concert Event Management Hub
 
-**Feature Branch**: `001-artist-event-management` | **Spec**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md) | **IA**: [ia.md](./ia.md) | **UI Foundation**: [ui/_shared.md](./ui/_shared.md) | **UI Specs**: [R-01 Login](./ui/R-01-login.md), [R-02 Home](./ui/R-02-home.md), [R-03 Search](./ui/R-03-search.md), [R-04 Artist Detail](./ui/R-04-artist-detail.md), [R-05 Event Detail](./ui/R-05-event-detail.md), [R-06 My Artists](./ui/R-06-my-artists.md), [R-07 Settings](./ui/R-07-settings.md), [R-08 Onboarding](./ui/R-08-onboarding.md), [R-09 Legal](./ui/R-09-legal.md)
+**Feature Branch**: `001-artist-event-management` | **Spec**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md) | **UI Foundation**: [ui/_shared.md](./ui/_shared.md)
 
 ## Execution Phases
 
